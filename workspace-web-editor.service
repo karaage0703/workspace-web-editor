@@ -1,0 +1,20 @@
+[Unit]
+Description=workspace-web-editor - Browse and edit your workspace from a browser
+After=network.target
+
+[Service]
+Type=simple
+# Edit User and paths to match your environment.
+User=YOUR_USERNAME
+WorkingDirectory=/path/to/workspace-web-editor
+ExecStart=/usr/bin/node src/server.js
+Restart=on-failure
+RestartSec=5
+Environment=PORT=9080
+Environment=WORKSPACE_DIR=/path/to/your/workspace
+# Optional:
+# Environment=EXCLUDE_EXTRA=archives,build
+# Environment=VIEWABLE_EXT=.md,.txt,.py,.ts
+
+[Install]
+WantedBy=multi-user.target

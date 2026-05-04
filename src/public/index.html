@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>workspace-web-editor</title>
+  <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" disabled>
+  <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <style>
+    /* ===== Linear-inspired design system =====
+       Source: knowledge/design_systems/linear.md (getdesign.md, MIT)
+       Tokens follow Linear's "near-black product-focused" canvas with single
+       lavender accent (#5e6ad2). System fonts stand in for Linear Display/Text. */
+
+    /* Dark theme tokens (default) */
+    :root, [data-theme="dark"] {
+      --canvas: #010102;
+      --surface-1: #0f1011;
+      --surface-2: #141516;
+      --surface-3: #18191a;
+      --ink: #f7f8f8;
+      --ink-muted: #d0d6e0;
+      --ink-subtle: #8a8f98;
+      --ink-tertiary: #62666d;
+      --hairline: #23252a;
+      --hairline-strong: #34343a;
+      --primary: #5e6ad2;
+      --primary-hover: #828fff;
+      --primary-focus: #5e69d1;
+      --primary-tint: rgba(94, 106, 210, 0.12);
+      --on-primary: #ffffff;
+      --success: #27a644;
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.40);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.55);
+    }
+
+    /* Light theme tokens (inverted, warm-neutral) */
+    [data-theme="light"] {
+      --canvas: #ffffff;
+      --surface-1: #f5f6f7;
+      --surface-2: #eef0f2;
+      --surface-3: #e6e8eb;
+      --ink: #08090a;
+      --ink-muted: #3c4043;
+      --ink-subtle: #6e7378;
+      --ink-tertiary: #9ba0a5;
+      --hairline: #e1e3e6;
+      --hairline-strong: #c8ccd0;
+      --primary: #5e6ad2;
+      --primary-hover: #4f5cc1;
+      --primary-focus: #5e69d1;
+      --primary-tint: rgba(94, 106, 210, 0.10);
+      --on-primary: #ffffff;
+      --success: #1d8638;
+      --shadow-md: 0 2px 8px rgba(8,9,10,0.06);
+      --shadow-lg: 0 12px 28px rgba(8,9,10,0.10);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display",
+                   "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial,
+                   "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      letter-spacing: -0.05px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body { display: flex; height: 100vh; overflow: hidden; }
+
+    /* Selection */
+    ::selection { background: var(--primary-tint); color: var(--ink); }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--hairline-strong); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--ink-tertiary); }
+
+    /* ===== Sidebar ===== */
+    #sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      background: var(--surface-1);
+      border-right: 1px solid var(--hairline);
+      overflow-y: auto;
+      padding: 16px 12px;
+      display: flex; flex-direction: column;
+    }
+
+    #sidebar h3 {
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--ink-subtle);
+      margin: 0;
+      padding: 4px 4px 12px;
+    }
+
+    .sidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ===== Form controls (selects) ===== */
+    select, input[type="text"] {
+      background: var(--surface-2);
+      color: var(--ink);
+      border: 1px solid var(--hairline);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+    select:hover, input[type="text"]:hover { border-color: var(--hairline-strong); }
+    select:focus, input[type="text"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-tint);
+    }
+
+    .control-row { display: flex; gap: 6px; margin-bottom: 8px; }
+    .control-row select { flex: 1; min-width: 0; }
+
+    /* ===== Buttons ===== */
+    button {
+      background: var(--surface-2);
+      color: var(--ink-muted);
+      border: 1px solid var(--hairline);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 120ms ease;
+      line-height: 1.2;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:hover {
+      background: var(--surface-3);
+      color: var(--ink);
+      border-color: var(--hairline-strong);
+    }
+    button:active { transform: translateY(1px); }
+    button:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--primary-tint);
+      border-color: var(--primary);
+    }
+    button.icon-btn {
+      padding: 6px 8px;
+      min-width: 32px;
+      justify-content: center;
+    }
+    button.primary {
+      background: var(--primary);
+      color: var(--on-primary);
+      border-color: var(--primary);
+    }
+    button.primary:hover {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+      color: var(--on-primary);
+    }
+
+    /* ===== Breadcrumb ===== */
+    .breadcrumb {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin: 12px 0 8px;
+      font-size: 12px;
+      align-items: center;
+    }
+    .breadcrumb a {
+      color: var(--ink-muted);
+      text-decoration: none;
+      padding: 3px 8px;
+      border-radius: 4px;
+      transition: all 120ms ease;
+      cursor: pointer;
+    }
+    .breadcrumb a:hover {
+      color: var(--primary);
+      background: var(--primary-tint);
+    }
+    .breadcrumb a.bc-home {
+      color: var(--primary);
+      font-weight: 500;
+      background: var(--primary-tint);
+    }
+    .breadcrumb a.bc-home:hover {
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+    .breadcrumb a.bc-current {
+      color: var(--ink);
+      font-weight: 500;
+      pointer-events: none;
+    }
+    .breadcrumb a.bc-home.bc-current {
+      pointer-events: none;
+      opacity: 0.85;
+    }
+    .breadcrumb .bc-sep { color: var(--ink-tertiary); font-size: 11px; padding: 0 1px; }
+
+    /* ===== File list ===== */
+    .file-list { list-style: none; padding: 0; margin: 0; flex: 1; }
+    .file-list li {
+      padding: 5px 8px;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--ink-muted);
+      transition: background 80ms ease, color 80ms ease;
+    }
+    .file-list li:hover { background: var(--surface-2); color: var(--ink); }
+    .file-list li.active {
+      background: var(--primary-tint);
+      color: var(--ink);
+      box-shadow: inset 2px 0 0 var(--primary);
+    }
+    .file-list .icon { width: 16px; flex-shrink: 0; opacity: 0.85; }
+    .file-list .name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-list .name .tag-mini {
+      font-size: 10px;
+      color: var(--ink-subtle);
+      margin-left: 4px;
+    }
+
+    /* ===== Resizer ===== */
+    #resizer {
+      width: 1px;
+      cursor: col-resize;
+      background: var(--hairline);
+      flex-shrink: 0;
+      position: relative;
+      transition: background 120ms ease;
+    }
+    #resizer::after {
+      content: "";
+      position: absolute;
+      inset: 0 -3px;
+    }
+    #resizer:hover, #resizer.dragging { background: var(--primary); }
+
+    /* ===== Main pane ===== */
+    #main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--canvas);
+    }
+
+    #toolbar {
+      height: 48px;
+      flex-shrink: 0;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--hairline);
+      background: var(--canvas);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    #toolbar .path {
+      flex: 1;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, "Liberation Mono", monospace;
+      font-size: 12px;
+      color: var(--ink-subtle);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: 0;
+    }
+
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 48px;
+    }
+    @media (max-width: 768px) {
+      #content { padding: 20px; }
+    }
+
+    /* ===== Editor ===== */
+    #editor {
+      width: 100%;
+      height: 100%;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--ink);
+      background: var(--canvas);
+      border: none;
+      resize: none;
+      padding: 0;
+      outline: none;
+    }
+
+    /* ===== Preview / Markdown ===== */
+    #preview {
+      max-width: 760px;
+      line-height: 1.7;
+      color: var(--ink);
+      font-size: 15px;
+    }
+    #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 {
+      color: var(--ink);
+      letter-spacing: -0.4px;
+      font-weight: 600;
+      line-height: 1.25;
+      margin-top: 1.8em;
+      margin-bottom: 0.6em;
+    }
+    #preview h1 { font-size: 32px; letter-spacing: -1.0px; margin-top: 0; }
+    #preview h2 { font-size: 24px; letter-spacing: -0.6px; padding-bottom: 8px; border-bottom: 1px solid var(--hairline); }
+    #preview h3 { font-size: 18px; letter-spacing: -0.3px; }
+    #preview h4 { font-size: 16px; }
+    #preview p { margin: 0.8em 0; }
+    #preview a { color: var(--primary); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 120ms ease; }
+    #preview a:hover { border-bottom-color: var(--primary); }
+    #preview ul, #preview ol { padding-left: 1.4em; }
+    #preview li { margin: 0.3em 0; }
+    #preview blockquote {
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      color: var(--ink-muted);
+      border-left: 2px solid var(--hairline-strong);
+      background: var(--surface-1);
+      border-radius: 0 6px 6px 0;
+    }
+    #preview hr { border: none; border-top: 1px solid var(--hairline); margin: 2em 0; }
+    #preview img {
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--hairline);
+    }
+
+    /* Inline code */
+    #preview :not(pre) > code {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      font-size: 0.88em;
+      background: var(--surface-2);
+      color: var(--ink);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--hairline);
+    }
+
+    /* Code blocks */
+    #preview pre {
+      background: var(--surface-1);
+      border: 1px solid var(--hairline);
+      padding: 16px 20px;
+      overflow-x: auto;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    #preview pre code {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, monospace;
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
+
+    /* Tables */
+    #preview table {
+      border-collapse: collapse;
+      margin: 1em 0;
+      font-size: 14px;
+      width: 100%;
+    }
+    #preview th, #preview td {
+      border: 1px solid var(--hairline);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    #preview th { background: var(--surface-1); font-weight: 600; }
+
+    /* Mermaid */
+    #preview pre.mermaid {
+      background: transparent;
+      border: 1px solid var(--hairline);
+      padding: 16px;
+      text-align: center;
+    }
+    #preview pre.mermaid svg { max-width: 100%; height: auto; }
+
+    /* Frontmatter pill row */
+    .frontmatter-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+      align-items: center;
+      padding: 10px 14px;
+      margin-bottom: 24px;
+      background: var(--surface-1);
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--ink-subtle);
+    }
+    .frontmatter-meta .fm-item { display: inline-flex; gap: 4px; align-items: center; }
+    .frontmatter-meta .fm-key { color: var(--ink-tertiary); font-weight: 500; }
+    .frontmatter-meta .fm-val { color: var(--ink-muted); }
+    .frontmatter-meta .fm-tag {
+      display: inline-flex;
+      align-items: center;
+      background: var(--primary-tint);
+      color: var(--primary);
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    /* Wiki-link */
+    a.wikilink {
+      color: var(--primary);
+      text-decoration: none;
+      border-bottom: 1px solid var(--primary-tint);
+      cursor: pointer;
+      transition: all 120ms ease;
+    }
+    a.wikilink:hover {
+      background: var(--primary-tint);
+      border-bottom-color: var(--primary);
+      border-radius: 3px;
+      padding: 0 3px;
+      margin: 0 -3px;
+    }
+    a.wikilink.broken {
+      color: var(--ink-tertiary);
+      border-bottom: 1px dotted var(--ink-tertiary);
+    }
+    a.wikilink.broken:hover { background: var(--surface-2); }
+
+    /* Backlinks */
+    #backlinks {
+      max-width: 760px;
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid var(--hairline);
+    }
+    #backlinks h4 {
+      margin: 0 0 12px;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--ink-subtle);
+    }
+    #backlinks ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    #backlinks li {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      transition: background 80ms ease;
+    }
+    #backlinks li:hover { background: var(--surface-1); }
+    #backlinks a {
+      color: var(--ink-muted);
+      text-decoration: none;
+      cursor: pointer;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #backlinks a:hover { color: var(--primary); }
+    #backlinks .bl-type {
+      font-size: 10px;
+      color: var(--ink-tertiary);
+      padding: 1px 6px;
+      border: 1px solid var(--hairline);
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      letter-spacing: 0;
+      flex-shrink: 0;
+    }
+
+    /* ===== Quick Switcher ===== */
+    #qs-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 12vh;
+      z-index: 100;
+    }
+    #qs-overlay.open { display: flex; }
+    #qs-modal {
+      background: var(--surface-1);
+      border: 1px solid var(--hairline-strong);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 65vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+    #qs-input {
+      width: 100%;
+      padding: 14px 18px;
+      border: none;
+      border-radius: 0;
+      border-bottom: 1px solid var(--hairline);
+      background: transparent;
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: -0.1px;
+    }
+    #qs-input:focus { box-shadow: none; }
+    #qs-input::placeholder { color: var(--ink-tertiary); }
+    #qs-list {
+      flex: 1;
+      overflow-y: auto;
+      list-style: none;
+      padding: 6px;
+      margin: 0;
+    }
+    #qs-list li {
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      border-radius: 6px;
+    }
+    #qs-list li.active, #qs-list li:hover {
+      background: var(--primary-tint);
+    }
+    #qs-list .qs-name { font-weight: 500; color: var(--ink); font-size: 13px; }
+    #qs-list .qs-path {
+      font-size: 11px;
+      color: var(--ink-subtle);
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      letter-spacing: 0;
+    }
+    #qs-list li.active .qs-name, #qs-list li:hover .qs-name { color: var(--primary); }
+
+    /* ===== Mobile responsive ===== */
+    .mobile-toggle { display: none; }
+    @media (max-width: 1024px) {
+      body { flex-direction: column; }
+      #sidebar {
+        width: 100%;
+        height: 100vh;
+        border-right: none;
+        border-bottom: 1px solid var(--hairline);
+        position: absolute;
+        top: 0; left: 0;
+        z-index: 10;
+      }
+      #sidebar.hidden { display: none; }
+      #main { width: 100%; height: 100vh; }
+      #main.hidden { display: none; }
+      .mobile-toggle { display: inline-flex !important; }
+      #content { padding: 20px; }
+      #resizer { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <h3>Workspace</h3>
+      <div style="display:flex;gap:4px">
+        <button id="sidebarReloadBtn" class="icon-btn" title="Reload current directory">↻</button>
+        <button class="icon-btn mobile-toggle" onclick="togglePane('main')" title="View">▶</button>
+      </div>
+    </div>
+    <div class="control-row">
+      <select id="sortSelect" onchange="loadDirectory(currentDir)">
+        <option value="name" selected>Sort: Name</option>
+        <option value="mtime">Sort: Modified</option>
+      </select>
+      <button id="orderBtn" class="icon-btn" onclick="toggleOrder()" title="Order">↑</button>
+    </div>
+    <div class="control-row">
+      <select id="tagFilter" onchange="loadDirectory(currentDir)" style="flex:1">
+        <option value="">All tags</option>
+      </select>
+    </div>
+    <div id="breadcrumb" class="breadcrumb"></div>
+    <ul id="fileList" class="file-list"></ul>
+  </div>
+  <div id="resizer"></div>
+  <div id="main">
+    <div id="toolbar">
+      <button class="icon-btn mobile-toggle" onclick="togglePane('sidebar')" title="Files">☰</button>
+      <span class="path" id="currentPath">No file selected</span>
+      <button id="editBtn" style="display:none">Edit</button>
+      <button id="saveBtn" class="primary" style="display:none">Save</button>
+      <button id="qsBtn" title="Quick switcher (Ctrl/Cmd + P)">🔍 Search</button>
+      <button id="themeBtn" class="icon-btn" title="Toggle theme">◐</button>
+      <button id="reloadBtn" class="icon-btn" title="Reload current view">↻</button>
+      <button id="syncBtn">Sync</button>
+    </div>
+    <div id="content">
+      <div id="preview"></div>
+      <div id="backlinks" style="display:none"></div>
+      <textarea id="editor" style="display:none"></textarea>
+    </div>
+  </div>
+
+  <!-- Quick Switcher -->
+  <div id="qs-overlay">
+    <div id="qs-modal">
+      <input id="qs-input" type="text" placeholder="ファイル名を入力 (Esc で閉じる)" autocomplete="off">
+      <ul id="qs-list"></ul>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    window.mermaid = mermaid;
+    window.dispatchEvent(new Event('mermaid-ready'));
+  </script>
+  <script>
+    // Mermaid 対応: ```mermaid のコードブロックは <pre class="mermaid"> として出力
+    // marked v5+ 推奨の marked.use({ renderer }) を使う
+    marked.use({
+      renderer: {
+        code(code, lang) {
+          // marked v12: token object 渡しもあるので両対応
+          let codeStr, langStr;
+          if (typeof code === 'object' && code !== null) {
+            codeStr = code.text || '';
+            langStr = code.lang || '';
+          } else {
+            codeStr = code || '';
+            langStr = lang || '';
+          }
+          langStr = (langStr || '').split(/\s+/)[0];
+          if (langStr === 'mermaid') {
+            const html = codeStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return `<pre class="mermaid">${html}</pre>`;
+          }
+          // false を返すとデフォルトレンダラーにフォールバック
+          return false;
+        }
+      },
+      // [[name]] / [[name|alias]] を inline tokenizer で処理
+      extensions: [{
+        name: 'wikilink',
+        level: 'inline',
+        start(src) { return src.indexOf('[['); },
+        tokenizer(src) {
+          const m = /^\[\[([^\]|#\n]+)(?:[#|]([^\]\n]+))?\]\]/.exec(src);
+          if (m) {
+            return {
+              type: 'wikilink',
+              raw: m[0],
+              name: m[1].trim(),
+              alias: (m[2] || m[1]).trim()
+            };
+          }
+        },
+        renderer(token) {
+          const safeName = token.name.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          const safeAlias = token.alias.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          return `<a href="#" class="wikilink" data-wiki="${safeName}">${safeAlias}</a>`;
+        }
+      }]
+    });
+    marked.setOptions({
+      highlight: (code, lang) => {
+        if (lang === 'mermaid') return code;
+        if (lang && hljs.getLanguage(lang)) {
+          return hljs.highlight(code, { language: lang }).value;
+        }
+        return hljs.highlightAuto(code).value;
+      }
+    });
+
+    // テーマ管理: light/dark を切替、hljs CSSとMermaidも追従
+    const THEME_KEY = 'workspace-web-editor-theme';
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.getElementById('hljs-light').disabled = (theme === 'dark');
+      document.getElementById('hljs-dark').disabled = (theme !== 'dark');
+      const btn = document.getElementById('themeBtn');
+      if (btn) btn.textContent = theme === 'dark' ? '◑' : '◐';
+      if (window.mermaid) {
+        window.mermaid.initialize({ startOnLoad: false, theme: theme === 'dark' ? 'dark' : 'default', securityLevel: 'loose' });
+      }
+    }
+    function getStoredTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === 'light' || saved === 'dark') return saved;
+      return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    let currentTheme = getStoredTheme();
+    applyTheme(currentTheme);
+    window.addEventListener('mermaid-ready', () => {
+      console.log('[workspace-web-editor] mermaid loaded');
+      applyTheme(currentTheme);
+      renderMermaid();
+    });
+
+    function renderMermaid() {
+      if (!window.mermaid) {
+        console.log('[workspace-web-editor] renderMermaid skipped: mermaid not yet loaded');
+        return;
+      }
+      const blocks = document.querySelectorAll('#preview pre.mermaid');
+      console.log('[workspace-web-editor] renderMermaid: found', blocks.length, 'block(s)');
+      blocks.forEach(b => { b.removeAttribute('data-processed'); });
+      if (blocks.length) {
+        try { window.mermaid.run({ nodes: blocks }); } catch (e) { console.error('mermaid render failed', e); }
+      }
+    }
+
+    let currentDir = '';
+    let currentFile = null;
+    let isEditing = false;
+    let sortOrder = 'asc'; // 'asc' or 'desc'
+
+    // ソート順切り替え
+    function toggleOrder() {
+      sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+      document.getElementById('orderBtn').textContent = sortOrder === 'asc' ? '↑' : '↓';
+      loadDirectory(currentDir);
+    }
+
+    // モバイル向けペイン切り替え
+    function togglePane(show) {
+      const sidebar = document.getElementById('sidebar');
+      const main = document.getElementById('main');
+      if (show === 'main') {
+        sidebar.classList.add('hidden');
+        main.classList.remove('hidden');
+      } else {
+        sidebar.classList.remove('hidden');
+        main.classList.add('hidden');
+      }
+    }
+    
+    // 画面幅が広い場合は両方表示
+    function checkWidth() {
+      if (window.innerWidth > 1024) {
+        document.getElementById('sidebar').classList.remove('hidden');
+        document.getElementById('main').classList.remove('hidden');
+      }
+    }
+    window.addEventListener('resize', checkWidth);
+
+    const fileList = document.getElementById('fileList');
+    const breadcrumb = document.getElementById('breadcrumb');
+    const preview = document.getElementById('preview');
+    const editor = document.getElementById('editor');
+    const currentPath = document.getElementById('currentPath');
+    const editBtn = document.getElementById('editBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const syncBtn = document.getElementById('syncBtn');
+
+    async function loadDirectory(dir = '') {
+      currentDir = dir;
+      const sortBy = document.getElementById('sortSelect').value;
+      const tagFilter = document.getElementById('tagFilter').value;
+      let url = `/api/files?dir=${encodeURIComponent(dir)}&sort=${sortBy}&order=${sortOrder}`;
+      if (tagFilter) url += `&tag=${encodeURIComponent(tagFilter)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      // パンくずリスト（root は常にクリック可能）
+      const parts = dir ? dir.split('/') : [];
+      const rootClass = dir ? 'bc-home' : 'bc-home bc-current';
+      let breadcrumbHtml = `<a href="#" data-dir="" class="${rootClass}" title="Go to root">⌂ root</a>`;
+      let accPath = '';
+      parts.forEach((part, i) => {
+        accPath += (accPath ? '/' : '') + part;
+        const isLast = i === parts.length - 1;
+        breadcrumbHtml += ` <span class="bc-sep">/</span> <a href="#" data-dir="${accPath}"${isLast ? ' class="bc-current"' : ''}>${escapeHtml(part)}</a>`;
+      });
+      breadcrumb.innerHTML = breadcrumbHtml;
+      breadcrumb.querySelectorAll('a').forEach(a => {
+        a.onclick = (e) => { e.preventDefault(); loadDirectory(a.dataset.dir); };
+      });
+      
+      // ファイル一覧
+      fileList.innerHTML = '';
+      
+      // 親ディレクトリへ戻る
+      if (dir) {
+        const parentDir = dir.split('/').slice(0, -1).join('/');
+        const li = document.createElement('li');
+        li.innerHTML = '<span class="icon">📁</span><span class="name">..</span>';
+        li.onclick = () => loadDirectory(parentDir);
+        fileList.appendChild(li);
+      }
+      
+      for (const file of data.files) {
+        const li = document.createElement('li');
+        const icon = file.type === 'directory' ? '📁' : '📄';
+        const tags = file.tags ? `<span style="font-size:0.7rem;color:var(--pico-muted-color)"> ${file.tags.map(t => '#'+t).join(' ')}</span>` : '';
+        li.innerHTML = `<span class="icon">${icon}</span><span class="name">${file.name}${tags}</span>`;
+        li.onclick = () => {
+          if (file.type === 'directory') {
+            loadDirectory(file.path);
+          } else {
+            loadFile(file.path);
+          }
+        };
+        fileList.appendChild(li);
+      }
+    }
+
+    async function loadFile(path) {
+      currentFile = path;
+      currentPath.textContent = path;
+      
+      // タブレット/モバイルではメインペインに自動切り替え
+      if (window.innerWidth <= 1024) {
+        togglePane('main');
+      }
+      
+      document.querySelectorAll('.file-list li').forEach(li => li.classList.remove('active'));
+      
+      const res = await fetch(`/api/files/${encodeURIComponent(path)}`);
+      const data = await res.json();
+      
+      if (path.endsWith('.md')) {
+        let mdContent = data.content;
+        let fmHtml = '';
+        const fmMatch = mdContent.match(/^---\n([\s\S]*?)\n---\n?/);
+        if (fmMatch) {
+          mdContent = mdContent.slice(fmMatch[0].length);
+          const items = [];
+          for (const line of fmMatch[1].split('\n')) {
+            const colonIdx = line.indexOf(':');
+            if (colonIdx < 0) continue;
+            const key = line.slice(0, colonIdx).trim();
+            let val = line.slice(colonIdx + 1).trim();
+            if (!key || !val) continue;
+            if (key === 'tags' && val.startsWith('[') && val.endsWith(']')) {
+              const tags = val.slice(1, -1).split(',').map(t => `<span class="fm-tag">${t.trim().replace(/['"]/g,'')}</span>`).join(' ');
+              items.push(`<span class="fm-item"><span class="fm-key">${key}:</span> ${tags}</span>`);
+            } else {
+              items.push(`<span class="fm-item"><span class="fm-key">${key}:</span> <span class="fm-val">${val}</span></span>`);
+            }
+          }
+          if (items.length) fmHtml = `<div class="frontmatter-meta">${items.join('')}</div>`;
+        }
+        preview.innerHTML = fmHtml + marked.parse(mdContent);
+        renderMermaid();
+        markBrokenWikilinks();
+        loadBacklinks(path);
+      } else {
+        const ext = path.split('.').pop();
+        const lang = { py: 'python', js: 'javascript', ts: 'typescript', sh: 'bash', json: 'json', yaml: 'yaml', yml: 'yaml' }[ext] || 'plaintext';
+        preview.innerHTML = `<pre><code class="language-${lang}">${hljs.highlight(data.content, { language: lang }).value}</code></pre>`;
+        document.getElementById('backlinks').style.display = 'none';
+      }
+      
+      editor.value = data.content;
+      editBtn.style.display = 'inline-block';
+      saveBtn.style.display = 'none';
+      preview.style.display = 'block';
+      editor.style.display = 'none';
+      isEditing = false;
+    }
+
+    editBtn.onclick = () => {
+      preview.style.display = 'none';
+      editor.style.display = 'block';
+      editBtn.style.display = 'none';
+      saveBtn.style.display = 'inline-block';
+      isEditing = true;
+    };
+
+    saveBtn.onclick = async () => {
+      await fetch(`/api/files/${encodeURIComponent(currentFile)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editor.value })
+      });
+      loadFile(currentFile);
+    };
+
+    document.getElementById('themeBtn').onclick = () => {
+      currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem(THEME_KEY, currentTheme);
+      applyTheme(currentTheme);
+      if (currentFile) loadFile(currentFile);
+    };
+
+    // 更新ボタン: 現在のディレクトリ + ファイルを再読み込み（ホームに戻らない）
+    function reloadCurrentView() {
+      loadDirectory(currentDir);
+      if (currentFile) loadFile(currentFile);
+    }
+    document.getElementById('reloadBtn').onclick = reloadCurrentView;
+    document.getElementById('sidebarReloadBtn').onclick = reloadCurrentView;
+
+    syncBtn.onclick = async () => {
+      syncBtn.disabled = true;
+      syncBtn.textContent = '⏳ Syncing...';
+      try {
+        await fetch('/api/sync', { method: 'POST' });
+        syncBtn.textContent = '✅ Done!';
+        setTimeout(() => { syncBtn.textContent = '🔄 Sync'; syncBtn.disabled = false; }, 2000);
+      } catch (e) {
+        syncBtn.textContent = '❌ Error';
+        setTimeout(() => { syncBtn.textContent = '🔄 Sync'; syncBtn.disabled = false; }, 2000);
+      }
+    };
+
+    // Ctrl+S で保存
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's' && isEditing) {
+        e.preventDefault();
+        saveBtn.click();
+      }
+    });
+
+    // タグ一覧読み込み
+    async function loadTags() {
+      try {
+        const res = await fetch('/api/tags');
+        const tags = await res.json();
+        const select = document.getElementById('tagFilter');
+        for (const { tag, count } of tags) {
+          const option = document.createElement('option');
+          option.value = tag;
+          option.textContent = `${tag} (${count})`;
+          select.appendChild(option);
+        }
+      } catch (e) { console.error('Failed to load tags:', e); }
+    }
+    
+    // ペインリサイズ
+    const resizer = document.getElementById('resizer');
+    const sidebar = document.getElementById('sidebar');
+    let isResizing = false;
+    resizer.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      resizer.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      const w = Math.max(150, Math.min(e.clientX, window.innerWidth - 200));
+      sidebar.style.width = w + 'px';
+    });
+    document.addEventListener('mouseup', () => {
+      if (!isResizing) return;
+      isResizing = false;
+      resizer.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+
+    // ===== Wiki-link / Backlinks =====
+    async function markBrokenWikilinks() {
+      const links = preview.querySelectorAll('a.wikilink');
+      const names = [...new Set([...links].map(a => a.dataset.wiki))];
+      if (!names.length) return;
+      const existing = new Map();
+      // 並列で resolve
+      await Promise.all(names.map(async name => {
+        try {
+          const res = await fetch(`/api/resolve?name=${encodeURIComponent(name)}`);
+          const data = await res.json();
+          if (data.matches && data.matches.length) existing.set(name, data.matches);
+        } catch (e) { /* ignore */ }
+      }));
+      links.forEach(a => {
+        const name = a.dataset.wiki;
+        if (!existing.has(name)) a.classList.add('broken');
+        else a.dataset.target = existing.get(name)[0];  // 最初のマッチを採用
+      });
+    }
+
+    // クリック委譲: wikilink を開く
+    preview.addEventListener('click', async (e) => {
+      const a = e.target.closest('a.wikilink');
+      if (!a) return;
+      e.preventDefault();
+      let target = a.dataset.target;
+      if (!target) {
+        // resolve まだの場合は今引く
+        const name = a.dataset.wiki;
+        const res = await fetch(`/api/resolve?name=${encodeURIComponent(name)}`);
+        const data = await res.json();
+        if (data.matches && data.matches.length) target = data.matches[0];
+      }
+      if (target) loadFile(target);
+      else alert(`リンク先が見つかりません: ${a.dataset.wiki}`);
+    });
+
+    async function loadBacklinks(path) {
+      const el = document.getElementById('backlinks');
+      if (!path.endsWith('.md')) { el.style.display = 'none'; return; }
+      try {
+        const res = await fetch(`/api/backlinks?path=${encodeURIComponent(path)}`);
+        const data = await res.json();
+        if (!data.links || !data.links.length) {
+          el.style.display = 'none';
+          return;
+        }
+        const items = data.links.map(l => {
+          const typeLabel = l.type === 'wiki' ? '[[ ]]' : l.type === 'md' ? '[md]' : '[[ ]]+md';
+          return `<li><span class="bl-type">${typeLabel}</span><a href="#" data-bl-target="${l.source}">${l.source}</a></li>`;
+        }).join('');
+        el.innerHTML = `<h4>📎 Backlinks (${data.links.length})</h4><ul>${items}</ul>`;
+        el.style.display = 'block';
+        el.querySelectorAll('a[data-bl-target]').forEach(a => {
+          a.onclick = (e) => { e.preventDefault(); loadFile(a.dataset.blTarget); };
+        });
+      } catch (e) {
+        el.style.display = 'none';
+      }
+    }
+
+    // ===== Quick Switcher =====
+    let qsAllFiles = [];
+    let qsLoadedAt = 0;
+    const qsOverlay = document.getElementById('qs-overlay');
+    const qsInput = document.getElementById('qs-input');
+    const qsList = document.getElementById('qs-list');
+    let qsActiveIdx = 0;
+
+    async function qsEnsureFiles() {
+      // 30秒キャッシュ
+      if (Date.now() - qsLoadedAt < 30000 && qsAllFiles.length) return;
+      try {
+        const res = await fetch('/api/all-files');
+        qsAllFiles = await res.json();
+        qsLoadedAt = Date.now();
+      } catch (e) { console.error('all-files load failed', e); }
+    }
+
+    function qsRender(filter) {
+      const f = (filter || '').toLowerCase().trim();
+      const matched = !f ? qsAllFiles.slice(0, 50) :
+        qsAllFiles.filter(x => x.path.toLowerCase().includes(f) || x.name.toLowerCase().includes(f)).slice(0, 50);
+      qsActiveIdx = 0;
+      qsList.innerHTML = matched.map((file, i) =>
+        `<li data-idx="${i}" data-path="${file.path}"${i === 0 ? ' class="active"' : ''}><span class="qs-name">${escapeHtml(file.name)}</span><span class="qs-path">${escapeHtml(file.path)}</span></li>`
+      ).join('') || '<li style="padding:1rem;text-align:center;color:var(--pico-muted-color)">候補なし</li>';
+    }
+    function escapeHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    async function qsOpen() {
+      await qsEnsureFiles();
+      qsInput.value = '';
+      qsRender('');
+      qsOverlay.classList.add('open');
+      qsInput.focus();
+    }
+    function qsClose() {
+      qsOverlay.classList.remove('open');
+    }
+    qsInput.oninput = () => qsRender(qsInput.value);
+    qsInput.onkeydown = (e) => {
+      const items = qsList.querySelectorAll('li[data-path]');
+      if (e.key === 'Escape') { qsClose(); }
+      else if (e.key === 'Enter') {
+        const cur = items[qsActiveIdx];
+        if (cur) { loadFile(cur.dataset.path); qsClose(); }
+      }
+      else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (qsActiveIdx < items.length - 1) qsActiveIdx++;
+        items.forEach((li, i) => li.classList.toggle('active', i === qsActiveIdx));
+        items[qsActiveIdx]?.scrollIntoView({ block: 'nearest' });
+      }
+      else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (qsActiveIdx > 0) qsActiveIdx--;
+        items.forEach((li, i) => li.classList.toggle('active', i === qsActiveIdx));
+        items[qsActiveIdx]?.scrollIntoView({ block: 'nearest' });
+      }
+    };
+    qsList.onclick = (e) => {
+      const li = e.target.closest('li[data-path]');
+      if (li) { loadFile(li.dataset.path); qsClose(); }
+    };
+    qsOverlay.onclick = (e) => {
+      if (e.target === qsOverlay) qsClose();
+    };
+    document.getElementById('qsBtn').onclick = qsOpen;
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        qsOpen();
+      }
+    });
+
+    loadTags();
+    loadDirectory();
+  </script>
+</body>
+</html>

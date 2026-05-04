@@ -1,0 +1,50 @@
+{
+  "name": "workspace-web-editor",
+  "version": "0.1.0",
+  "description": "Browse and edit your local Markdown / code workspace from a browser. Lightweight, file-based, with wiki-links, backlinks, Mermaid, dark mode, and Quick Switcher.",
+  "type": "module",
+  "main": "src/server.js",
+  "bin": {
+    "workspace-web-editor": "src/server.js"
+  },
+  "files": [
+    "src/",
+    "LICENSE",
+    "README.md",
+    "USAGE.md",
+    "workspace-web-editor.service"
+  ],
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": [
+    "markdown",
+    "editor",
+    "viewer",
+    "wiki",
+    "backlinks",
+    "mermaid",
+    "tailscale",
+    "self-hosted",
+    "notes",
+    "obsidian-alternative"
+  ],
+  "author": "karaage0703",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/karaage0703/workspace-web-editor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/karaage0703/workspace-web-editor/issues"
+  },
+  "homepage": "https://github.com/karaage0703/workspace-web-editor#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "marked": "^12.0.0"
+  }
+}

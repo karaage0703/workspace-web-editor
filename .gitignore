@@ -1,0 +1,12 @@
+node_modules/
+.workspace-web-editor.pid
+*.log
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Local env
+.env
+.env.local
