@@ -44,14 +44,6 @@ WORKSPACE_DIR=/path/to/your/workspace PORT=9080 node src/server.js
 
 詳しい使い方は **[USAGE.md](./USAGE.md)** を参照。
 
-### Agent Skill として取り込む
-
-`gh skill` でエージェントに起動・運用手順を取り込めます。
-
-```bash
-gh skill install karaage0703/workspace-web-editor workspace-web-editor --agent claude-code
-```
-
 ### 環境変数 / Environment variables
 
 | 変数 | デフォルト | 説明 |
